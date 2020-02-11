@@ -1,6 +1,7 @@
 *.log
 *.tlog
 *.1
-*.vcproj
-*.vcproj.filters
+*.vcxproj
+*.vcxproj.filters
+*.vcxproj.user
 
