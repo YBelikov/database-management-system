@@ -21,6 +21,7 @@ typedef struct Doctor {
 	char dateOfBirth[LENGTH_OF_BIRTH_DATE];
 	int experience;
 	int nextDoctorID;
+	int isDelete;
 } doctor;
 
 typedef struct Hospital {
@@ -59,6 +60,8 @@ void appendAfterLastDoctorInHospital(doctor*, doctor*);
 void printSlaveRecord(doctor*);
 void rewriteHospitalRecord(hospital, int);
 void rewriteDoctorRecord(doctor*);
+void updateSlaveRecord(char[MAX_LENGTH_OF_COMMAND], char*);
+void changeSlaveRecord(doctor*);
 
 int doesFileHasContent(FILE* f) {
 	fseek(f, 0, SEEK_END);
@@ -160,6 +163,9 @@ void handleCommand() {
 	}
 	else if (!strcmp(option, "get-s")) {
 		getRecordFromSlaveFile(copyOfcommand, delims);
+	}
+	else if (!strcmp(option, "update-s")) {
+		updateSlaveRecord(copyOfcommand, delims);
 	}
 }
 
@@ -384,5 +390,56 @@ void appendAfterLastDoctorInHospital(doctor* firstDoc, doctor* newDoc) {
 
 
 void printSlaveRecord(doctor* doc) {
-	printf("ID: %d Name: %s Surname: %s DateOfBirth: %s Experience: %d\n", doc->id, doc->name, doc->surname, doc->dateOfBirth, doc->experience);
+	printf("ID: %d Name: %s Surname: %s Date Of Birth: %s Experience: %d\n", doc->id, doc->name, doc->surname, doc->dateOfBirth, doc->experience);
+}
+
+void updateSlaveRecord(char command[MAX_LENGTH_OF_COMMAND], char* delims) {
+	char* option = strtok(command, delims);
+	int masterID = atoi(strtok(NULL, delims));
+	int doctorID = atoi(strtok(NULL, delims));
+	int hospitalIndex = searchForMasterIndex(masterID);
+	hospital hosp = hospitalWithIndex(hospitalIndex);
+	doctor doc = searchInSlaveFile(hosp.firstDoctorID);
+	while (doc.id != doctorID && doc.id != -1) {
+		doc = searchInSlaveFile(doc.nextDoctorID);
+	}
+	char field[MAX_LEN_OF_FIELD];
+	fgets(field, MAX_LEN_OF_FIELD, stdin);
+	deleteEndOfLine(field);
+	changeSlaveRecord(&doc, field);
+	handler.doctorDataFile = fopen(handler.doctorFileName, "rb+");
+	for (;;) {
+		doctor oldRecord;
+		fread(&oldRecord, sizeof(doctor), 1, handler.doctorDataFile);
+		if (feof(handler.doctorDataFile)) break;
+		if (oldRecord.id == doc.id) {
+			fseek(handler.doctorDataFile, -1L * (int)sizeof(doctor), SEEK_CUR);
+			fwrite(&doc, sizeof(doctor), 1, handler.doctorDataFile);
+			fclose(handler.doctorDataFile);
+			break;
+		}
+	}
+
+}
+
+void changeSlaveRecord(doctor* doc, char* field) {
+	if (!strcmp(field, "Name")) {
+		fgets(doc->name, NAME_LEN, stdin);
+		deleteEndOfLine(doc->name);
+	}
+	else if (!strcmp(field, "Surname")) {
+		fgets(doc->surname, SURNAME_LEN, stdin);
+		deleteEndOfLine(doc->surname);
+	}
+	else if (!strcmp(field, "Experience")) {
+		scanf("%d", &doc->experience);
+		char c = getchar();
+	}
+	else if (!strcmp(field, "Date Of Birth")) {
+		fgets(doc->dateOfBirth, LENGTH_OF_BIRTH_DATE, stdin);
+		deleteEndOfLine(doc->dateOfBirth);
+	}
+	else {
+		printf("You can update only existing fields");
+	}
 }
