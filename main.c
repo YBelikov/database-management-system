@@ -7,7 +7,7 @@
 #include <stdlib.h>
 
 #define MAX_LENGTH_OF_COMMAND 128
-#define LENGTH_OF_BIRTH_DATE 8
+#define LENGTH_OF_BIRTH_DATE 11
 #define SURNAME_LEN 128
 #define NAME_LEN 32
 #define HOSPITAL_ADDRESS_LEN 64 
@@ -16,9 +16,9 @@
 
 typedef struct Doctor {
 	int id;
-	char dateOfBirth[LENGTH_OF_BIRTH_DATE];
 	char name[NAME_LEN];
 	char surname[SURNAME_LEN];
+	char dateOfBirth[LENGTH_OF_BIRTH_DATE];
 	int experience;
 	int nextDoctorID;
 } doctor;
@@ -57,6 +57,9 @@ void appendRecordToMaster(int);
 doctor searchInSlaveFile(int);
 void appendAfterLastDoctorInHospital(doctor*, doctor*);
 void printSlaveRecord(doctor*);
+void rewriteHospitalRecord(hospital, int);
+void rewriteDoctorRecord(doctor*);
+
 int doesFileHasContent(FILE* f) {
 	fseek(f, 0, SEEK_END);
 	unsigned long length = ftell(f);
@@ -107,8 +110,7 @@ void insertToMasterFile(char command[MAX_LENGTH_OF_COMMAND]) {
 	newHospital.firstDoctorID = -1;
 	insertToIndexFile(&newHospital);
 
-	handler.hospitalDataFile = fopen(handler.dataFileName, "a");
-	fseek(handler.hospitalDataFile, 0L, SEEK_END);
+	handler.hospitalDataFile = fopen(handler.dataFileName, "ab+");
 	fwrite(&newHospital, sizeof(hospital), 1, handler.hospitalDataFile);
 	fclose(handler.hospitalDataFile);
 }
@@ -141,7 +143,7 @@ void handleCommand() {
 	char copyOfcommand[MAX_LENGTH_OF_COMMAND];
 	memcpy(copyOfcommand, command, MAX_LENGTH_OF_COMMAND);
 	char* option = strtok(command, delims);
-	if (!strcmp(option, "show-m")) {
+ 	if (!strcmp(option, "show-m")) {
 		showMasterFile();
 	}
 	else if (!strcmp(option, "insert-m")) {
@@ -168,7 +170,7 @@ int main(int argc, char** argv) {
 	handler.dataFileName = "hospital.dat";
 	handler.doctorFileName = "doctor.dat";
 	handler.dataIndexFile = fopen(handler.indexFileName, "ab");
-	handler.doctorDataFile = fopen(handler.doctorFileName, "wb+");
+	handler.doctorDataFile = fopen(handler.doctorFileName, "ab+");
 	fclose(handler.doctorDataFile);
 	if (!doesFileHasContent(handler.dataIndexFile)) {
 		int firstIndex = 0;
@@ -281,17 +283,18 @@ void getRecordFromSlaveFile(char command[MAX_LENGTH_OF_COMMAND], char* delims) {
 	if (docIDString != NULL) {
 		int docID = atoi(docIDString);
 		doc = searchInSlaveFile(hospital.firstDoctorID);
-		while (doc.nextDoctorID != docID) {
+		while (doc.id != docID && doc.nextDoctorID != -1) {
 			doc = searchInSlaveFile(doc.nextDoctorID);
-			printSlaveRecord(&doc);
+			
 		}
+		printSlaveRecord(&doc);
 	}
 	else {
 		if (hospital.firstDoctorID != -1) {
 			doc = searchInSlaveFile(hospital.firstDoctorID);
-			while (doc.nextDoctorID != -1) {
-				doc = searchInSlaveFile(doc.nextDoctorID);
+			while(doc.id != -1){
 				printSlaveRecord(&doc);
+				doc = searchInSlaveFile(doc.nextDoctorID);
 			}
 		}
 	}
@@ -323,14 +326,21 @@ void appendRecordToMaster(int masterID, doctor *doc) {
 	}
 	else {
 		hospital.firstDoctorID = doc->id;
+		rewriteHospitalRecord(hospital, index);
 	}
 }
 
+void rewriteHospitalRecord(hospital hosp, int index) {
+	handler.hospitalDataFile = fopen(handler.dataFileName, "rb+");
+	fseek(handler.hospitalDataFile, index * sizeof(hospital), SEEK_SET);
+	fwrite(&hosp, sizeof(hospital), 1, handler.hospitalDataFile);
+	fclose(handler.hospitalDataFile);
+}
 
-void writeToSlaveFile(doctor* doctor) {
+void writeToSlaveFile(doctor* doc) {
 	
-	handler.doctorDataFile = fopen(handler.doctorFileName, "ab");
-	fwrite(doctor, sizeof(doctor), 1, handler.doctorDataFile);
+	handler.doctorDataFile = fopen(handler.doctorFileName, "ab+");
+	fwrite(doc, sizeof(doctor), 1, handler.doctorDataFile);
 	fclose(handler.doctorDataFile);
 }
 
@@ -338,11 +348,16 @@ doctor searchInSlaveFile(int id) {
 	doctor doc;
 	handler.doctorDataFile = fopen(handler.doctorFileName, "rb");
 	for (;;) {
-		fread(&doc, sizeof(doc), 1, handler.doctorDataFile);
+		fread(&doc, sizeof(doctor), 1, handler.doctorDataFile);
 		if (feof(handler.doctorDataFile)) break;
-		if (doc.id == id) return doc;
+		if (doc.id == id) {
+			fclose(handler.doctorDataFile);
+			return doc;
+		}
 	}
 	doc.id = -1;
+	fclose(handler.doctorDataFile);
+	return doc;
 }
 
 void appendAfterLastDoctorInHospital(doctor* firstDoc, doctor* newDoc) {
@@ -351,9 +366,23 @@ void appendAfterLastDoctorInHospital(doctor* firstDoc, doctor* newDoc) {
 		firstDoc = &doc;
 	}
 	firstDoc->nextDoctorID = newDoc->id;
+	handler.doctorDataFile = fopen(handler.doctorFileName, "rb+");
+	for (;;) {
+		doctor oldRecord;
+		fread(&oldRecord, sizeof(doctor), 1, handler.doctorDataFile);
+		if (feof(handler.doctorDataFile)) break;
+		if (oldRecord.id == firstDoc->id) {
+			oldRecord.nextDoctorID = firstDoc->nextDoctorID;
+			fseek(handler.doctorDataFile, -1L * (int)sizeof(doctor), SEEK_CUR);
+			fwrite(&oldRecord, sizeof(doctor), 1, handler.doctorDataFile);
+			fclose(handler.doctorDataFile);
+			break;
+		}
+	}
+
 }
 
+
 void printSlaveRecord(doctor* doc) {
-	printf("ID: %d Name: %s Surname: %s DateOfBirth: %s Experience: %d\n",
-		doc->id, doc->name, doc->surname, doc->dateOfBirth, doc->experience);
+	printf("ID: %d Name: %s Surname: %s DateOfBirth: %s Experience: %d\n", doc->id, doc->name, doc->surname, doc->dateOfBirth, doc->experience);
 }
