@@ -62,6 +62,9 @@ void rewriteHospitalRecord(hospital, int);
 void rewriteDoctorRecord(doctor*);
 void updateSlaveRecord(char[MAX_LENGTH_OF_COMMAND], char*);
 void changeSlaveRecord(doctor*);
+void deleteMasterRecord(char[MAX_LENGTH_OF_COMMAND], char*);
+void deleteRecordFromIndexFile(int);
+void deleteAllSubrecords(int);
 
 int doesFileHasContent(FILE* f) {
 	fseek(f, 0, SEEK_END);
@@ -167,6 +170,9 @@ void handleCommand() {
 	else if (!strcmp(option, "update-s")) {
 		updateSlaveRecord(copyOfcommand, delims);
 	}
+	else if (!strcmp(option, "delete-m")) {
+		deleteMasterRecord(copyOfcommand, delims);
+	}
 }
 
 
@@ -183,6 +189,7 @@ int main(int argc, char** argv) {
 		fwrite(&firstIndex, sizeof(int), 1, handler.dataIndexFile);
 	}
 	fclose(handler.dataIndexFile);
+	deleteAllSubrecords(3);
 	while (1) {
 		handleCommand();
 	}
@@ -442,4 +449,77 @@ void changeSlaveRecord(doctor* doc, char* field) {
 	else {
 		printf("You can update only existing fields");
 	}
+}
+
+void deleteMasterRecord(char command[MAX_LENGTH_OF_COMMAND], char* delims) {
+	char* option = strtok(command, delims);
+	int masterID = atoi(strtok(NULL, delims));
+	handler.hospitalDataFile = fopen(handler.dataFileName, "rb");
+	FILE* hospitalDataTmp = fopen("hospital_tmp.dat", "wb");
+	hospital toDelete;
+	int found = 0;
+	int firstDocId = -1;
+	for (;;) {
+		fread(&toDelete, sizeof(hospital), 1, handler.hospitalDataFile);
+		if (feof(handler.hospitalDataFile)) break;
+		if (toDelete.id == masterID) {
+			printf("Record found and deleted\n\n");
+			firstDocId = toDelete.firstDoctorID;
+		}
+		else {
+			fwrite(&toDelete, sizeof(hospital), 1, hospitalDataTmp);
+		}
+	}
+	if (!found) printf("No records with requested id: %d\n", masterID);
+	fclose(handler.hospitalDataFile);
+	fclose(hospitalDataTmp);
+	remove(handler.dataFileName);
+	rename("hospital_tmp.dat", handler.dataFileName);
+	deleteRecordFromIndexFile(masterID);
+	deleteAllSubrecords(firstDocId);
+}
+
+void deleteRecordFromIndexFile(int id) {
+	handler.dataIndexFile = fopen(handler.indexFileName, "rb");
+	FILE* hospitalIndexFileTmp = fopen("hospital_tmp.ind", "wb");
+	int index;
+	int masterID;
+	int found = 0;
+	fseek(handler.dataIndexFile, sizeof(int), SEEK_SET);
+	for (;;) {
+		fread(&masterID, sizeof(int), 1, handler.dataIndexFile);
+		fread(&index, sizeof(int), 1, handler.dataIndexFile);
+		if (feof(handler.dataIndexFile)) break;
+		if  (masterID == id) {
+			printf("Record in index found and deleted\n\n");
+			found = 1;
+		}
+		else {
+			fwrite(&masterID, sizeof(int), 1, hospitalIndexFileTmp);
+			fwrite(&index, sizeof(int), 1, hospitalIndexFileTmp);
+		}
+	}
+	if (!found) printf("No records in index file with requested id: %d\n", id);
+	remove(handler.indexFileName);
+	rename("hospital_tmp.ind", handler.indexFileName);
+}
+
+void deleteAllSubrecords(int firstDocID) {
+	if (firstDocID != -1) {
+		handler.doctorDataFile = fopen(handler.doctorFileName, "wb+");
+		doctor doc;
+		FILE* doctorsDataTmp = fopen("doctor_tmp.dat", "wb");
+		for (;;) {
+			fread(&doc, sizeof(doctor), 1, handler.doctorDataFile);
+			if (feof(handler.doctorDataFile)) break;
+			if (doc.id == firstDocID) {
+				printf("Delete subrecord\n");
+				firstDocID = doc.nextDoctorID;
+			}
+			fwrite(&doc, sizeof(doctor), 1, doctorsDataTmp);
+		}
+	}
+	remove(handler.doctorFileName);
+	rename("doctor_tmp.dat", handler.doctorFileName);
+
 }
