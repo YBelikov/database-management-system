@@ -524,6 +524,8 @@ void deleteAllSubrecords(int firstDocID) {
 			}
 			fwrite(&doc, sizeof(doctor), 1, doctorsDataTmp);
 		}
+		fclose(handler.doctorDataFile);
+		fclose(doctorsDataTmp);
 	}
 	remove(handler.doctorFileName);
 	rename("doctor_tmp.dat", handler.doctorFileName);
