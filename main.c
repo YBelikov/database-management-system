@@ -65,6 +65,8 @@ void changeSlaveRecord(doctor*);
 void deleteMasterRecord(char[MAX_LENGTH_OF_COMMAND], char*);
 void deleteRecordFromIndexFile(int);
 void deleteAllSubrecords(int);
+void clearContentOfFiles();
+
 
 int doesFileHasContent(FILE* f) {
 	fseek(f, 0, SEEK_END);
@@ -172,6 +174,8 @@ void handleCommand() {
 	}
 	else if (!strcmp(option, "delete-m")) {
 		deleteMasterRecord(copyOfcommand, delims);
+	}else if (!strcmp(option, "clear")) {
+		clearContentOfFiles();
 	}
 }
 
@@ -189,7 +193,6 @@ int main(int argc, char** argv) {
 		fwrite(&firstIndex, sizeof(int), 1, handler.dataIndexFile);
 	}
 	fclose(handler.dataIndexFile);
-	deleteAllSubrecords(3);
 	while (1) {
 		handleCommand();
 	}
@@ -522,4 +525,13 @@ void deleteAllSubrecords(int firstDocID) {
 	remove(handler.doctorFileName);
 	rename("doctor_tmp.dat", handler.doctorFileName);
 
+}
+
+void clearContentOfFiles() {
+	handler.hospitalDataFile = fopen(handler.dataFileName, "wb");
+	fclose(handler.hospitalDataFile);
+	handler.dataIndexFile = fopen(handler.indexFileName, "wb");
+	fclose(handler.dataIndexFile);
+	handler.doctorDataFile = fopen(handler.doctorFileName, "wb");
+	fclose(handler.doctorDataFile);
 }
