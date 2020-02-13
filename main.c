@@ -66,14 +66,9 @@ void deleteMasterRecord(char[MAX_LENGTH_OF_COMMAND], char*);
 void deleteRecordFromIndexFile(int);
 void deleteAllSubrecords(int);
 void clearContentOfFiles();
-
-
-int doesFileHasContent(FILE* f) {
-	fseek(f, 0, SEEK_END);
-	unsigned long length = ftell(f);
-	if (length != 0) return 1;
-	return 0;
-}
+void deleteSlaveRecord(char[MAX_LENGTH_OF_COMMAND], char*);
+void removeSubrecord(hospital*, int);
+int doesFileHasContent(FILE* f);
 
 
 void showMasterFile() {
@@ -94,7 +89,7 @@ void insertToIndexFile(hospital *newHospital) {
 	handler.dataIndexFile = fopen(handler.indexFileName, "rb+");
 	int oldIndex;
 	fread(&oldIndex, sizeof(int), 1, handler.dataIndexFile);
-	//newHospital->id = oldIndex * oldIndex;
+	newHospital->id = oldIndex * oldIndex;
 	fseek(handler.dataIndexFile, 0L, SEEK_SET);
 	int newIndex = oldIndex + 1;
 	fwrite(&newIndex, sizeof(int), 1, handler.dataIndexFile);
@@ -109,8 +104,8 @@ void insertToMasterFile(char command[MAX_LENGTH_OF_COMMAND]) {
 	char delims[] = " \n";
 	hospital newHospital;
 	char *delim = strtok(command, delims);
-	int id = atoi(strtok(NULL, delims));
-	newHospital.id = id;
+	//int id = atoi(strtok(NULL, delims));
+	//newHospital.id = id;
 	char* budgetString = strtok(NULL, delims);
 	newHospital.budget = atoi(budgetString);
 	strncpy(newHospital.address, strtok(NULL, delims), HOSPITAL_ADDRESS_LEN);
@@ -177,6 +172,9 @@ void handleCommand() {
 	}else if (!strcmp(option, "clear")) {
 		clearContentOfFiles();
 	}
+	else if (!strcmp(option, "delete-s")) {
+		deleteSlaveRecord(copyOfcommand, delims);
+	}
 }
 
 
@@ -205,12 +203,21 @@ void printMenu() {
 	printf("You have next commands available for input:\n");
 	printf("1.\"show-m\" - to look information about all hospital in database\n");
 	printf("2.\"get-m ID\" - to look information about hospital with ID key\n");
-	printf("3.\"show-s ID\" - to look information about all doctors in hospital with ID key\n");
-	printf("4.\"get-s hospitalID docID\" - to look information about doctors with docID key in hospital with hospitalID key\n");
-	printf("5.\"insert-m ID budget address phone\" - to add new hospital\n");
+	printf("3.\"get-s ID\" - to look information about all doctors in hospital with ID key\n");
+	printf("4.\"get-s hospitalID docID\" - to look information about doctor with docID key in hospital with hospitalID key\n");
+	printf("5.\"insert-m budget address phone\" - to add new hospital\n");
 	printf("6.\"update-m ID\" - to update record of hospital with ID\n");
+	printf("7.\"update-s");
 
 }
+
+int doesFileHasContent(FILE* f) {
+	fseek(f, 0, SEEK_END);
+	unsigned long length = ftell(f);
+	if (length != 0) return 1;
+	return 0;
+}
+
 
 int searchForMasterIndex(int masterID) {
 
@@ -541,4 +548,70 @@ void clearContentOfFiles() {
 	fclose(handler.dataIndexFile);
 	handler.doctorDataFile = fopen(handler.doctorFileName, "wb");
 	fclose(handler.doctorDataFile);
+}
+
+void deleteSlaveRecord(char command[MAX_LENGTH_OF_COMMAND], char* delims) {
+	char* option = strtok(command, delims);
+	int masterID = atoi(strtok(NULL, delims));
+	int slaveID = atoi(strtok(NULL, delims));
+	int masterIndex = searchForMasterIndex(masterID);
+	hospital hosp = hospitalWithIndex(masterIndex);
+	removeSubrecord(&hosp, slaveID);
+}
+
+void removeSubrecord(hospital* hosp, int slaveID) {
+	int recordID = hosp->firstDoctorID;
+	if (recordID != -1) {
+		doctor doc;
+		doctor nextDoctor;
+		doctor previousDoctor;
+		handler.doctorDataFile = fopen(handler.doctorFileName, "rb");
+		FILE* doctorDataTemp = fopen("doctor_temp.dat", "wb+");
+		int found = 0;
+		for (;;) {
+			fread(&doc, sizeof(doctor), 1, handler.doctorDataFile);
+	
+			if (feof(handler.doctorDataFile)) break;
+			if (doc.nextDoctorID == -1) {
+				printf("Record with id: %d deleted\n\n", slaveID);
+				found = 1;
+				continue;
+			}
+			if (doc.id == slaveID) {
+				fread(&nextDoctor, sizeof(doctor), 1, handler.doctorDataFile);
+				fclose(doctorDataTemp);
+				doctorDataTemp = fopen("doctor_temp.dat", "rb+");
+				if (doesFileHasContent(doctorDataTemp)) {
+					fseek(doctorDataTemp, -1 * (int)sizeof(doctor), SEEK_END);
+					fread(&previousDoctor, sizeof(doctor), 1, doctorDataTemp);
+					previousDoctor.nextDoctorID = nextDoctor.id;
+					fseek(handler.doctorDataFile, -1 * (int)sizeof(doctor), SEEK_CUR);
+					fseek(doctorDataTemp, -1 * (int)sizeof(doctor), SEEK_END);
+					fwrite(&previousDoctor, sizeof(doctor), 1, doctorDataTemp);
+					fseek(doctorDataTemp, 0L, SEEK_END);
+				}
+				else {
+					fwrite(&nextDoctor, sizeof(doctor), 1, doctorDataTemp);
+					hosp->firstDoctorID = nextDoctor.id;
+					int index = searchForMasterIndex(hosp->id);
+					rewriteHospitalRecord(*hosp, index);
+					printf("Record with id: %d deleted\n\n", slaveID);
+					found = 1;
+				}
+				printf("Record with id: %d deleted\n\n", slaveID);
+				found = 1;
+			}
+			else {
+				fwrite(&doc, sizeof(doctor), 1, doctorDataTemp);
+			}
+		}
+		if(!found) printf("No record with id: %d\n\n", slaveID);
+		fclose(handler.doctorDataFile);
+		fclose(doctorDataTemp);
+		remove(handler.doctorFileName);
+		rename("doctor_temp.dat", handler.doctorFileName);
+		return;
+	}
+	printf("This record doesn't have any subrecords\n");
+	
 }
