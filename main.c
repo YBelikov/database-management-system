@@ -504,7 +504,7 @@ void deleteRecordFromIndexFile(int id) {
 		}
 	}
 	if (!found) printf("No records in index file with requested id: %d\n", id);
-	fclose(handler.indexFileName);
+	fclose(handler.dataIndexFile);
 	fclose(hospitalIndexFileTmp);
 	remove(handler.indexFileName);
 	rename("hospital_tmp.ind", handler.indexFileName);
@@ -512,7 +512,7 @@ void deleteRecordFromIndexFile(int id) {
 
 void deleteAllSubrecords(int firstDocID) {
 	if (firstDocID != -1) {
-		handler.doctorDataFile = fopen(handler.doctorFileName, "wb+");
+		handler.doctorDataFile = fopen(handler.doctorFileName, "rb");
 		doctor doc;
 		FILE* doctorsDataTmp = fopen("doctor_tmp.dat", "wb");
 		for (;;) {
@@ -522,7 +522,9 @@ void deleteAllSubrecords(int firstDocID) {
 				printf("Delete subrecord\n");
 				firstDocID = doc.nextDoctorID;
 			}
-			fwrite(&doc, sizeof(doctor), 1, doctorsDataTmp);
+			else {
+				fwrite(&doc, sizeof(doctor), 1, doctorsDataTmp);
+			}
 		}
 		fclose(handler.doctorDataFile);
 		fclose(doctorsDataTmp);
