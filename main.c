@@ -206,8 +206,13 @@ void printMenu() {
 	printf("3.\"get-s ID\" - to look information about all doctors in hospital with ID key\n");
 	printf("4.\"get-s hospitalID docID\" - to look information about doctor with docID key in hospital with hospitalID key\n");
 	printf("5.\"insert-m budget address phone\" - to add new hospital\n");
+	printf("5.\"insert-s hospitalID docID name surname birth date experience\" - to add new doctor record with appropriate information to hospital with hospitalID\n");
 	printf("6.\"update-m ID\" - to update record of hospital with ID\n");
-	printf("7.\"update-s");
+	printf("7.\"update-s hospitalID docID\" - to update record of doctor with docID in hospital with hospitalID\n");
+	printf("8.\"delete-m hospitalID\" - to delete record with hospitalID and all their subrecord\n");
+	printf("9.\"delete-m hospitalID doc\" - to delete record of doctor with docID\n");
+
+
 
 }
 
