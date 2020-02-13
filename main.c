@@ -468,6 +468,7 @@ void deleteMasterRecord(char command[MAX_LENGTH_OF_COMMAND], char* delims) {
 		if (toDelete.id == masterID) {
 			printf("Record found and deleted\n\n");
 			firstDocId = toDelete.firstDoctorID;
+			found = 1;
 		}
 		else {
 			fwrite(&toDelete, sizeof(hospital), 1, hospitalDataTmp);
@@ -503,6 +504,8 @@ void deleteRecordFromIndexFile(int id) {
 		}
 	}
 	if (!found) printf("No records in index file with requested id: %d\n", id);
+	fclose(handler.indexFileName);
+	fclose(hospitalIndexFileTmp);
 	remove(handler.indexFileName);
 	rename("hospital_tmp.ind", handler.indexFileName);
 }
