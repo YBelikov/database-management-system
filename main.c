@@ -501,6 +501,9 @@ void deleteRecordFromIndexFile(int id) {
 	int index;
 	int masterID;
 	int found = 0;
+	int nextIndex = -1;
+	fread(&nextIndex, sizeof(int), 1, handler.dataIndexFile);
+	fwrite(&nextIndex, sizeof(int), 1, hospitalIndexFileTmp);
 	fseek(handler.dataIndexFile, sizeof(int), SEEK_SET);
 	for (;;) {
 		fread(&masterID, sizeof(int), 1, handler.dataIndexFile);
@@ -540,9 +543,9 @@ void deleteAllSubrecords(int firstDocID) {
 		}
 		fclose(handler.doctorDataFile);
 		fclose(doctorsDataTmp);
+		remove(handler.doctorFileName);
+		rename("doctor_tmp.dat", handler.doctorFileName);
 	}
-	remove(handler.doctorFileName);
-	rename("doctor_tmp.dat", handler.doctorFileName);
 
 }
 
@@ -580,7 +583,15 @@ void removeSubrecord(hospital* hosp, int slaveID) {
 			if (doc.nextDoctorID == -1) {
 				printf("Record with id: %d deleted\n\n", slaveID);
 				found = 1;
-				continue;
+				doctor previous;
+				fclose(doctorDataTemp);
+				doctorDataTemp = fopen("doctor_temp.dat", "rb+");
+				fseek(doctorDataTemp, -1 * (int)sizeof(doctor), SEEK_END);
+				fread(&previous, sizeof(doctor), 1, doctorDataTemp);
+				previous.nextDoctorID = -1;
+				fseek(doctorDataTemp, -1 * (int)sizeof(doctor), SEEK_END);
+				fwrite(&previous, sizeof(doctor), 1, doctorDataTemp);
+				break;
 			}
 			if (doc.id == slaveID) {
 				fread(&nextDoctor, sizeof(doctor), 1, handler.doctorDataFile);
