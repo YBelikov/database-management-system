@@ -1,13 +1,13 @@
 ﻿  main.c
-D:\cpp\repos\database-c\database-c\main.c(156,36): warning C4047: функция: "char *" отличается по уровням косвенного обращения от "char (*)[128]"
-D:\cpp\repos\database-c\database-c\main.c(156,36): warning C4024: insertToMasterFile: различные типы для формального и фактического параметров 1
-D:\cpp\repos\database-c\database-c\main.c(159,41): warning C4047: функция: "char *" отличается по уровням косвенного обращения от "char (*)[128]"
-D:\cpp\repos\database-c\database-c\main.c(159,41): warning C4024: getRecordFromMasterFile: различные типы для формального и фактического параметров 1
-D:\cpp\repos\database-c\database-c\main.c(162,40): warning C4047: функция: "char *" отличается по уровням косвенного обращения от "char (*)[128]"
-D:\cpp\repos\database-c\database-c\main.c(162,40): warning C4024: updateMasterFileRecord: различные типы для формального и фактического параметров 1
-D:\cpp\repos\database-c\database-c\main.c(288,7): warning C4101: field: неиспользованная локальная переменная
-D:\cpp\repos\database-c\database-c\main.c(328,40): warning C4020: appendRecordToMaster: слишком много фактических параметров
-D:\cpp\repos\database-c\database-c\main.c(333,54): warning C4029: объявленный список формальных параметров отличается от объявления
-D:\cpp\repos\database-c\database-c\main.c(416,31): warning C4020: changeSlaveRecord: слишком много фактических параметров
-D:\cpp\repos\database-c\database-c\main.c(432,50): warning C4029: объявленный список формальных параметров отличается от объявления
+D:\cpp\repos\database-c\database-c\main.c(153,36): warning C4047: функция: "char *" отличается по уровням косвенного обращения от "char (*)[128]"
+D:\cpp\repos\database-c\database-c\main.c(153,36): warning C4024: insertToMasterFile: различные типы для формального и фактического параметров 1
+D:\cpp\repos\database-c\database-c\main.c(156,41): warning C4047: функция: "char *" отличается по уровням косвенного обращения от "char (*)[128]"
+D:\cpp\repos\database-c\database-c\main.c(156,41): warning C4024: getRecordFromMasterFile: различные типы для формального и фактического параметров 1
+D:\cpp\repos\database-c\database-c\main.c(159,40): warning C4047: функция: "char *" отличается по уровням косвенного обращения от "char (*)[128]"
+D:\cpp\repos\database-c\database-c\main.c(159,40): warning C4024: updateMasterFileRecord: различные типы для формального и фактического параметров 1
+D:\cpp\repos\database-c\database-c\main.c(303,7): warning C4101: field: неиспользованная локальная переменная
+D:\cpp\repos\database-c\database-c\main.c(343,40): warning C4020: appendRecordToMaster: слишком много фактических параметров
+D:\cpp\repos\database-c\database-c\main.c(348,54): warning C4029: объявленный список формальных параметров отличается от объявления
+D:\cpp\repos\database-c\database-c\main.c(431,31): warning C4020: changeSlaveRecord: слишком много фактических параметров
+D:\cpp\repos\database-c\database-c\main.c(447,50): warning C4029: объявленный список формальных параметров отличается от объявления
   database-c.vcxproj -> D:\cpp\repos\database-c\Debug\database-c.exe
